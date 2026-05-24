@@ -4,7 +4,7 @@ const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
-  // 🌙 إضافة حالة الوضع الداكن هنا
+  // 🌙 حالة الوضع الداكن
   const [darkMode, setDarkMode] = useState(false);
 
   const addToCart = (product) => {
@@ -23,7 +23,7 @@ export const CartProvider = ({ children }) => {
     setCartItems([]);
   };
 
-  // دالة تبديل الوضع
+  // دالة تبديل الوضع الداكن
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
@@ -31,7 +31,8 @@ export const CartProvider = ({ children }) => {
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   const cartTotal = cartItems.reduce((total, item) => {
-    const priceNum = parseInt(productPriceToNumber(item.price));
+    // تم إزالة الـ parseInt الزائدة هنا لأن الدالة بالأسفل تعيد رقماً بالفعل
+    const priceNum = productPriceToNumber(item.price); 
     return total + priceNum * item.quantity;
   }, 0);
 
@@ -44,9 +45,20 @@ export const CartProvider = ({ children }) => {
 
 export const useCart = () => useContext(CartContext);
 
+// دالة تحويل السعر المحدثة والمضمونة
 function productPriceToNumber(priceStr) {
+  if (!priceStr) return 0;
+  
+  // تحويل المدخل إلى نص للتأكد من عدم حدوث خطأ إذا كان قادماً كرقم
+  let str = String(priceStr);
+
   const map = { '٠':0, '١':1, '٢':2, '٣':3, '٤':4, '٥':5, '٦':6, '٧':7, '٨':8, '٩':9 };
-  let cleanStr = priceStr.replace(/[ج\.م\s]/g, '');
-  let englishNumberStr = cleanStr.replace(/[٠-٩]/g, function(d) { return map[d]; });
-  return parseInt(englishNumberStr) || 0;
+  
+  // 1. أولاً: نقوم بتحويل الأرقام الشرقية (٠-٩) إلى أرقام إنجليزية
+  let englishNumberStr = str.replace(/[٠-٩]/g, function(d) { return map[d]; });
+  
+  // 2. ثانياً: نحذف أي شيء ليس رقماً (مثل الحروف العربية والإنجليزية والرموز والمسافات)
+  let cleanStr = englishNumberStr.replace(/[^\d]/g, '');
+  
+  return parseInt(cleanStr, 10) || 0;
 }
